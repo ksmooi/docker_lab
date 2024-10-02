@@ -1,0 +1,165 @@
+# CLI of docker:
+#   docker info
+#   docker images
+#   docker network ls
+#   docker volume ls
+#   docker image prune
+#
+#   docker ps -a
+#   docker logs -f <container_id_or_name>
+#   docker exec -it triton /usr/src/tensorrt/bin/trtexec -h
+
+# Attach to the container:
+#   docker exec -it postgres bash
+#   docker exec -it mysql bash
+
+# CLI of docker compose:
+#   docker compose -f docker/compose.yml build
+#   docker compose -f docker/compose.yml up
+#   docker compose -f docker/compose.yml up -d
+#   docker compose -f docker/compose.yml up triton
+#   docker compose -f docker/compose.yml down
+#   docker compose -f docker/compose.yml down triton
+#   docker compose -f docker/compose.yml down -v      # Remove volumes
+#   
+#   docker compose top
+#   docker compose ps -a
+#   docker compose stats
+#   docker compose logs -f
+#   
+#   docker compose -f docker/compose.yml run postgresql /bin/bash
+#   docker compose -f docker/compose.yml run dgraph /bin/bash
+
+services:
+  postgres:
+    image: postgres:16.4
+    container_name: postgres
+    networks:
+      - public_net
+      #- private_net
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../host/postgres:/host
+    env_file:
+      - ./env/postgres.env
+    restart: always
+
+  mysql:
+    image: mysql:8.0.39
+    container_name: mysql
+    networks:
+      - public_net
+      #- private_net
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql                               # Persist MySQL data
+      - ../host/mysql/init_scripts:/docker-entrypoint-initdb.d  # Mount initialization scripts
+      - ../host/mysql:/host
+    env_file:
+      - ./env/mysql.env
+    restart: unless-stopped
+    #command: --skip-grant-tables  # Temporarily add this to bypass password checks
+
+  mongodb:
+    image: mongodb/mongodb-community-server:8.0.0-ubuntu2204
+    container_name: mongodb
+    networks:
+      - public_net
+      #- private_net
+    ports:
+      - "27017:27017"  # MongoDB default port
+    volumes:
+      - mongodb_data:/data/db
+      - ../host/mongodb:/host  
+    env_file:
+      - ./env/mongodb.env
+    restart: always
+
+  redis:
+    image: redis:7.4.0
+    container_name: redis
+    networks:
+      - public_net
+      #- private_net
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ../host/redis:/host
+      - ../host/redis/redis.conf:/usr/local/etc/redis/redis.conf  # Mount redis.conf
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]   # Use redis.conf
+
+  dgraph:
+    image: dgraph/standalone:v24.0.2
+    container_name: dgraph
+    networks:
+      - public_net
+    ports:
+      - "8080:8080"  # Ratel UI (not needed for standalone, will be in ratel service)
+      - "9080:9080"  # Dgraph Alpha
+    volumes:
+      - dgraph_data:/dgraph
+      - ../host/dgraph:/host
+    env_file:
+      - ./env/dgraph.env
+    restart: always
+
+  ratel:
+    image: dgraph/ratel:v21.03.2
+    container_name: dgraph_ratel
+    networks:
+      - public_net
+    ports:
+      - "8000:8000"  # Ratel UI
+    depends_on:
+      - dgraph
+    restart: always
+
+  qdrant:
+    image: qdrant/qdrant:v1.11.3
+    container_name: qdrant
+    networks:
+      - public_net
+      #- private_net
+    ports:
+      - "6333:6333"  # Qdrant API
+      - "6334:6334"  # Qdrant internal communication
+    volumes:
+      - qdrant_data:/qdrant/storage
+      - ../host/qdrant:/host
+    env_file:
+      - ./env/qdrant.env
+    restart: always
+
+  rabbitmq:
+    image: rabbitmq:3.13.7-management
+    container_name: rabbitmq
+    networks:
+      - public_net
+    ports:
+      - "5672:5672"    # RabbitMQ messaging port
+      - "15672:15672"  # RabbitMQ management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ../host/rabbitmq:/host
+    env_file:
+      - ./env/rabbitmq.env
+    restart: always
+
+volumes:
+  postgres_data:
+  mysql_data:
+  mongodb_data:
+  redis_data:
+  dgraph_data:
+  qdrant_data:
+  rabbitmq_data:
+
+networks:
+  public_net:
+    driver: bridge
+  private_net:
+    driver: bridge
