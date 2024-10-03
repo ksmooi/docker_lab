@@ -6,9 +6,6 @@ A **Blog Application** is a widely-used platform that allows users to create, ma
 
 1. [Application Features](#application-features)
 2. [Database Collections and Schema Design](#database-collections-and-schema-design)
-    1. [Users Collection](#users-collection)
-    2. [Posts Collection](#posts-collection)
-    3. [Comments Collection](#comments-collection)
 3. [Getting Started with MongoDB Shell (mongosh)](#getting-started-with-mongoDB-shell)
 4. [Basic CRUD Operations](#basic-crud-operations)
 5. [Advanced Query Techniques](#advanced-query-techniques)
@@ -18,7 +15,7 @@ A **Blog Application** is a widely-used platform that allows users to create, ma
 
 ---
 
-## 1. Application Features
+## Application Features
 
 The core functionality of the Blog Application is designed to enable users to interact with blog posts in a variety of ways.
 
@@ -30,7 +27,7 @@ The core functionality of the Blog Application is designed to enable users to in
 
 ---
 
-## 2. Database Collections and Schema Design
+## Database Collections and Schema Design
 
 For a structured and scalable design, the database will consist of three primary collections: **Users**, **Posts**, and **Comments**.
 
@@ -128,7 +125,7 @@ For a structured and scalable design, the database will consist of three primary
 
 ---
 
-## 3. Getting Started with MongoDB Shell
+## Getting Started with MongoDB Shell
 
 MongoDB’s command-line interface, **mongosh**, is essential for managing databases. Below are the steps to install and connect.
 
@@ -158,7 +155,7 @@ mongosh "mongodb+srv://<username>:<password>@cluster0.mongodb.net/<dbname>?retry
 
 ---
 
-## 4. Basic CRUD Operations
+## Basic CRUD Operations
 
 CRUD (Create, Read, Update, Delete) operations form the backbone of data manipulation in MongoDB. Below are examples of how to perform these operations using **mongosh**.
 
@@ -283,7 +280,7 @@ Deleting documents from collections is a straightforward process but should be u
 
 ---
 
-## 5. Advanced Query Techniques
+## Advanced Query Techniques
 
 MongoDB provides powerful querying capabilities beyond basic CRUD operations, allowing for more sophisticated data retrieval and manipulation. Here are some advanced techniques using **mongosh**.
 
@@ -425,7 +422,7 @@ MongoDB provides operators to work with arrays, making it easier to filter and m
 
 ---
 
-## 6. Practical Use Cases in Blog Application
+## Practical Use Cases in Blog Application
 
 Here are some practical examples of how to apply MongoDB’s advanced querying techniques to the Blog Application.
 
@@ -532,7 +529,7 @@ db.posts.updateMany(
 
 ---
 
-## 7. Best Practices
+## Best Practices
 
 ### 7.1 Indexing for Performance
 
@@ -565,7 +562,7 @@ db.createCollection("users", {
 
 ---
 
-## 8. Conclusion
+## Conclusion
 
 Building a Blog Application involves understanding the key components of user authentication, post creation, and comment interaction. By following best practices and leveraging MongoDB’s powerful query and aggregation features, you can create a robust application that is scalable and easy to maintain.
 
