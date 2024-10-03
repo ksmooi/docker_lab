@@ -257,6 +257,22 @@ Updating documents allows you to modify existing records based on specified cond
   )
   ```
 
+- **Remove the `bio` field from all users in the `users` collection**:
+  ```javascript
+  db.users.updateMany(
+    {}, 
+    { $unset: { "bio": "" } }
+  )
+  ```
+
+- **Remove the `tags` field from a specific post**:
+  ```javascript
+  db.posts.updateOne(
+    { "title": "Understanding NoSQL Databases" }, 
+    { $unset: { "tags": "" } }
+  )
+  ```
+
 ### 4.4 Delete
 
 Deleting documents from collections is a straightforward process but should be used carefully as it is irreversible.
@@ -481,6 +497,23 @@ db.posts.aggregate([
 ])
 ```
 
+This MongoDB aggregation query retrieves the top 5 posts with the highest number of comments. Here's a step-by-step breakdown of each stage:
+
+1. **$lookup**:  
+   - Joins the `posts` collection with the `comments` collection.
+   - Matches each post’s `_id` with the `post_id` field in the `comments` collection.
+   - The matching comments for each post are stored in an array field called `post_comments`.
+
+2. **$project**:  
+   - Selects the `title` of the post.
+   - Adds a new field `comment_count` which counts the number of comments in the `post_comments` array using the `$size` operator.
+
+3. **$sort**:  
+   - Sorts the documents by `comment_count` in descending order (`-1`), meaning posts with more comments appear first.
+
+4. **$limit**:  
+   - Limits the output to the top 5 posts.
+
 ### 6.4 Retrieve the Total Number of Comments Made by a User
 
 To find the total number of comments made by a specific user:
@@ -539,7 +572,23 @@ db.posts.createIndex({ "author_id": 1 })
 db.comments.createIndex({ "post_id": 1 })
 ```
 
-### 7.2 Schema Validation
+### 7.2 Creating a Compound Index
+
+You can create an index that includes multiple fields like this:
+
+```javascript
+db.posts.createIndex({ "author_id": 1, "created_at": -1 })
+```
+
+Example queries utilizing the **compound index**:
+
+```javascript
+db.posts.find({ "author_id": ObjectId("64a7f2f8b60e4b1d4c8d4e56") }).sort({ "created_at": -1 })
+db.posts.find({ "author_id": ObjectId("64a7f2f8b60e4b1d4c8d4e56") })
+db.posts.find({ "created_at": { $gt: ISODate("2023-01-01") } })
+```
+
+### 7.3 Schema Validation
 
 Enforce data integrity with validation:
 ```javascript
