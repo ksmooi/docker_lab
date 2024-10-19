@@ -14,8 +14,6 @@ When you launch a MySQL Docker container, you can pass environment variables to 
 ### Example Docker Compose Configuration:
 
 ```yaml
-version: '3.8'
-
 services:
   mysql:
     image: mysql:8.0
@@ -57,12 +55,12 @@ docker_lab
 │   └── env
 │       └── mysql.env
 └── host
-    ├── dgraph
-    ├── mongodb
-    └── mysql
-        └── init_scripts
-            ├── 001_create_tables.sql  # SQL script for table creation
-            └── 002_insert_data.sql    # SQL script for data seeding
+    ├── dgraph
+    ├── mongodb
+    └── mysql
+        └── init_scripts
+            ├── 001_create_tables.sql  # SQL script for table creation
+            └── 002_insert_data.sql    # SQL script for data seeding
 ```
 
 In this structure, SQL scripts like `001-create-tables.sql` and `002-insert-data.sql` are automatically executed in alphabetical order when the container is first initialized.
@@ -79,7 +77,7 @@ In this structure, SQL scripts like `001-create-tables.sql` and `002-insert-data
   );
   ```
 
-- `002-insert-data.sql`:
+- `002-insert_data.sql`:
 
   ```sql
   INSERT INTO users (username, email) VALUES ('user1', 'user1@example.com');
@@ -132,24 +130,30 @@ docker compose -f docker/compose.yml up -d
 Once the container is running, access the MySQL shell without needing to enter a password:
 
 ```bash
-docker exec -it mysql mysql
+docker exec -it mysql-container mysql
 ```
 
 ### 3.4 Reset the Root Password
 
-After accessing the MySQL shell, update the root password and create a new user:
+After accessing the MySQL shell, update the root password and configure user authentication methods:
 
 ```sql
 USE mysql;
-ALTER USER 'root'@'localhost' IDENTIFIED BY 'rootpassword';
-CREATE USER 'myappuser'@'%' IDENTIFIED BY 'myapppassword';
-GRANT ALL PRIVILEGES ON app_db.* TO 'myappuser'@'%';
+ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY 'root_pwd';
+ALTER USER 'myappuser'@'%' IDENTIFIED WITH mysql_native_password BY 'myapppassword';
+GRANT ALL PRIVILEGES ON myappdb.* TO 'myappuser'@'%';
 FLUSH PRIVILEGES;
 ```
 
+**Explanation of Commands:**
+- `ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY 'root_pwd';`: Changes the authentication method for the `root` user to `mysql_native_password` and sets a new password.
+- `ALTER USER 'myappuser'@'%' IDENTIFIED WITH mysql_native_password BY 'myapppassword';`: Changes the authentication method for `myappuser` to `mysql_native_password` and sets a new password.
+- `GRANT ALL PRIVILEGES ON myappdb.* TO 'myappuser'@'%';`: Grants all privileges on the `myappdb` database to `myappuser`.
+- `FLUSH PRIVILEGES;`: Applies the changes made to the privileges.
+
 ### 3.5 Remove `--skip-grant-tables` and Restart
 
-Once the root password is reset, remove the `--skip-grant-tables` line from your `docker/compose.yml`, then restart the MySQL container:
+Once the root password is reset and authentication methods are configured, remove the `--skip-grant-tables` line from your `docker/compose.yml`, then restart the MySQL container:
 
 ```bash
 docker compose -f docker/compose.yml down
@@ -161,20 +165,98 @@ docker compose -f docker/compose.yml up -d
 You should now be able to log in as the `root` user using the new password:
 
 ```bash
-docker exec -it mysql mysql -u root -p
+docker exec -it mysql-container mysql -u root -p
 ```
 
 Or, log in as the `myappuser` user using the new password:
 
 ```bash
-docker exec -it mysql mysql -u myappuser -p
+docker exec -it mysql-container mysql -u myappuser -p
 ```
 
-## 4. Persisting and Managing Data
+## 4. Accessing MySQL Without SSL
 
-To ensure data persists across container restarts, use Docker volumes. In the example above, the `mysql_data` volume persists all database data, ensuring that even if the container is stopped or removed, your database remains intact.
+By default, MySQL may require SSL for connections, which can be restrictive in development environments. To allow connections without SSL, you need to adjust the MySQL server's configuration.
+
+### 4.1 Update Docker Compose Configuration
+
+Modify your `docker/compose.yml` to disable SSL by adding the appropriate MySQL configuration. You can achieve this by setting the `MYSQL_ROOT_HOST` environment variable and configuring MySQL to not require SSL.
+
+```yaml
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-container
+    ports:
+      - "3306:3306"
+    networks:
+      - backend
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./init-scripts:/docker-entrypoint-initdb.d
+      - ../host/mysql:/host
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: myappdb
+      MYSQL_USER: myappuser
+      MYSQL_PASSWORD: myapppassword
+      MYSQL_ROOT_HOST: '%'  # Allow root login from any host
+    #env_file:
+    #  - ./env/mysql.env
+    restart: always
+    command: --skip-grant-tables  # Remove this line after resetting passwords
+```
+
+### 4.2 Modify MySQL Configuration to Disable SSL
+
+Create a custom MySQL configuration file to disable SSL. For example, create a file named `my.cnf` with the following content:
+
+```ini
+[mysqld]
+skip_ssl
+```
+
+Mount this configuration file into the Docker container by updating the `volumes` section:
+
+```yaml
+volumes:
+  - mysql-data:/var/lib/mysql
+  - ./init-scripts:/docker-entrypoint-initdb.d
+  - ./my.cnf:/etc/mysql/conf.d/my.cnf
+  - ../host/mysql:/host
+```
+
+### 4.3 Restart the MySQL Container
+
+After updating the configuration, restart the MySQL container to apply the changes:
+
+```bash
+docker compose -f docker/compose.yml down
+docker compose -f docker/compose.yml up -d
+```
+
+### 4.4 Verify SSL Configuration
+
+Connect to the MySQL server and verify that SSL is disabled:
+
+```bash
+docker exec -it mysql-container mysql -u root -p -e "SHOW VARIABLES LIKE 'have_ssl';"
+```
+
+The output should indicate that SSL is disabled:
+
+```
++---------------+-------+
+| Variable_name | Value |
++---------------+-------+
+| have_ssl      | NO    |
++---------------+-------+
+```
+
+## 5. Persisting and Managing Data
+
+To ensure data persists across container restarts, use Docker volumes. In the example above, the `mysql-data` volume persists all database data, ensuring that even if the container is stopped or removed, your database remains intact.
 
 ## Conclusion
 
-By following this guide, you can easily initialize a MySQL Docker container with essential configurations such as root password setup, database creation, and user management. The use of environment variables and SQL initialization scripts simplifies the process, while Docker volumes ensure that your data persists across container restarts. Additionally, bypassing authentication using `--skip-grant-tables` enables easy password recovery and user management when necessary. This setup is ideal for creating a repeatable and reliable MySQL deployment in Docker.
-
+By following this guide, you can easily initialize a MySQL Docker container with essential configurations such as root password setup, database creation, and user management. The use of environment variables and SQL initialization scripts simplifies the process, while Docker volumes ensure that your data persists across container restarts. Additionally, bypassing authentication using `--skip-grant-tables` enables easy password recovery and user management when necessary, and configuring MySQL to allow connections without SSL can facilitate development workflows. This setup is ideal for creating a repeatable and reliable MySQL deployment in Docker.
