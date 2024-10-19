@@ -1,0 +1,31 @@
+services:
+  agentic-ai:
+    build:
+      context: .
+      dockerfile: app.docker
+    container_name: agentic-ai
+    environment:
+      POSTGRES_HOST: postgresql
+      POSTGRES_USER: ai_user
+      POSTGRES_PASSWORD: ai_password
+      POSTGRES_DB: ai_db
+      MONGO_URI: mongodb://mongodb:27017
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: 6333
+    depends_on:
+      - postgresql
+      - mongodb
+      - qdrant
+      - redis
+      - rabbitmq
+    ports:
+      - "8000:8000"  # FastAPI
+      - "8501:8501"  # Streamlit
+    networks:
+      - ai_net
+
+networks:
+  ai_net:
+    external: true
