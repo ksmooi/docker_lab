@@ -29,6 +29,9 @@
 #   
 #   docker compose -f docker/compose.yml run postgresql /bin/bash
 #   docker compose -f docker/compose.yml run dgraph /bin/bash
+#
+#   docker exec -it mysql mysql -u root -p
+#   docker exec -it redis redis-cli -h 192.168.1.150 -p 6379
 
 services:
   postgres:
