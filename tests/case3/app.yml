@@ -1,0 +1,30 @@
+services:
+  app:
+    build:
+      context: ./app
+      dockerfile: app.docker
+    container_name: rag-app
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+
+      DGRAPH_HOST: dgraph
+      DGRAPH_PORT: 9080
+
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: 6333
+    ports:
+      - "50051:50051"  # gRPC API
+    depends_on:
+      - postgres
+      - dgraph
+      - qdrant
+    networks:
+      - rag_net
+
+networks:
+  rag_net:
+    external: true
