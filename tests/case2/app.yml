@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  app1:
+    build:
+      context: ./app1
+      dockerfile: app1.docker
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      MONGODB_HOST: mongodb
+      MONGODB_PORT: 27017
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "3001:3001"
+    depends_on:
+      - postgres
+      - mongodb
+      - redis
+    networks:
+      - app_net
+
+  app2:
+    build:
+      context: ./app2
+      dockerfile: app2.docker
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DB: ${MYSQL_DB}
+      MONGODB_HOST: mongodb
+      MONGODB_PORT: 27017
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "3002:3002"
+    depends_on:
+      - mysql
+      - mongodb
+      - redis
+    networks:
+      - app_net
+
+networks:
+  app_net:
+    external: true
