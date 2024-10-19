@@ -1,0 +1,16 @@
+langchain
+openai
+transformers
+sentence-transformers
+faiss-cpu
+pinecone-client
+chromadb
+pandas
+numpy
+sqlalchemy
+python-dotenv
+fastapi
+uvicorn
+streamlit
+requests
+tqdm
